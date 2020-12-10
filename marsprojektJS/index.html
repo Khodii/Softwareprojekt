@@ -1,0 +1,146 @@
+<!--suppress ALL -->
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>MarsRover map / controls</title>
+    <style type="text/css">
+        * {
+            font-family: monospace;
+        }
+
+        canvas {
+            image-rendering: optimizeSpeed;
+            /*border: 1px dotted black;*/
+            margin-bottom: 10px;
+        }
+
+        .small button {
+            width: 120px;
+        }
+
+        .big button {
+            height: 80px;
+            width: 120px;
+        }
+
+        button {
+            margin-bottom: 7px;
+        }
+
+        #legend button {
+            width: 80px;
+        }
+
+    </style>
+    <script src="draw.js" type="text/javascript"></script>
+    <script src="bot.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        let mode = -1;
+
+        function btn1() {
+            createNewObstacleSet();
+            mode = 1;
+        }
+
+        function btn6() {
+            if (markers.length < 0) return;
+            const marker = markers[0];
+            markers.splice(0, 1);
+            moveRobot(marker);
+
+        }
+
+        function updateRadius() {
+            const radiusParam = document.getElementById("btn3");
+            radiusCircle = radiusParam.value;
+            if (radiusCircle < botRadius) {
+                radiusCircle = botRadius;
+                radiusParam.value = botRadius;
+            }
+            draw_plus_robot();
+        }
+
+        function updateScale() {
+            const scaleParam = document.getElementById("scl");
+            if (typeof scaleParam == 'undefined' || scaleParam.value <= 0)
+                return;
+            setScale(scaleParam.value / 100);
+        }
+
+        function updateGrid() {
+            const gridParam = document.getElementById("grid");
+            if (typeof gridParam == 'undefined' || gridParam.value <= 0)
+                return;
+            setGridSize(gridParam.value);
+        }
+
+        // noinspection JSUnusedLocalSymbols
+        function updateStats() {
+            const statParam = document.getElementById("stats");
+            // noinspection JSSuspiciousNameCombination
+            statParam.innerHTML = "tot.distance: " + Math.round(distance_driven) + "cm, tot.angle: " + Math.round(angle_turned) + "°, tot.ticks: " + ticks_driven + " (about " + Math.round(ticks_driven / 6.4) / 10 + "s)"
+                + "<br>robot position x:" + Math.round(bot.point.x) + ", y:" + Math.round(bot.point.y) + ", angle:" + Math.round(bot.angle) + "°";
+        }
+
+    </script>
+</head>
+<body>
+
+<h1>MarsRover map</h1>
+
+<div class="small">
+    <button onclick="btn1();">draw obstacles</button>
+    <button onclick="clearMarkers();">delete spots</button>
+    <button onclick="deleteObstacles(bot.point, radiusCircle);">delete radius</button>
+    <input id="btn3" oninput="updateRadius();" step="10" style="width: 50px" type="number" value="100">
+    <span>Ping lines:</span><input checked id="conLines" type="checkbox">
+    <span>auto-radar:</span><input id="radar" onchange="autoRadarOn = !autoRadarOn" type="checkbox">
+    <span>scale %:</span><input id="scl" min="0" oninput="updateScale();" step="10" style="width: 50px" type="number"
+                                value="200">
+    <span>movement-lines:<input id="movePoss"
+                                onchange="hideMovementPossibilities = !hideMovementPossibilities; draw_plus_robot()"
+                                type="checkbox"></span>
+</div>
+<div class="big">
+    <button onclick="mode = 2;">move robot (click)</button>
+    <button onclick="mode = 4;">mark spots (click)</button>
+    <button onclick="btn6();">drive to marker</button>
+    <button onclick="get_radar_points();">request<br>radar sweep</button>
+    <!--<button onclick="get_status();">get_status()</button>-->
+    <button onclick="get_labyrinth();">go into labyrinth</button>
+    <!--<button onclick="get_labyrinth_end();">end labyrinth run</button>-->
+</div>
+<div class="small">
+    <button onclick="robot_rotate(5)">rot L</button>
+    <button onclick="robot_rotate(-5)">rot R</button>
+    <button onclick="robot_translate({x:-5,y:0})">L</button>
+    <button onclick="robot_translate({x:5,y:0})">R</button>
+    <button onclick="robot_translate({x:0,y:5})">UP</button>
+    <button onclick="robot_translate({x:0,y:-5})">DOWN</button>
+</div>
+<div class="small">
+    <button onclick="moveRobotTurn(90)">90° L turn</button>
+    <button onclick="moveRobotTurn(-90)">90° R turn</button>
+    <button onclick="moveRobotTurn(45)">45° L turn</button>
+    <button onclick="moveRobotTurn(-45)">45° R turn</button>
+    <button onclick="moveRobotTurn(180)">180° turn</button>
+</div>
+<div><span id="scale">1 unit equals <input id="grid" min="1" oninput="updateGrid()" style="width: 40px" type="number"
+                                           value="20">cm<br></span><span id="mousePosition">--</span></div>
+<div id="stats"></div>
+<div id="laby">driving mode active</div>
+<div id="legend">
+    <canvas height="1000" id="canvas" width="1000"></canvas>
+    <div><b>red:</b> forwards left, <b>blue:</b> forwards right, <b>green:</b> backwards left, <b>pink:</b> backwards
+        right
+    </div>
+    <div>
+        <button onclick="load()">load</button>
+        <button onclick="reset()">reset</button>
+        <span>status request expected every 3 seconds</span>
+    </div>
+</div>
+<hr>
+<div id="log"></div>
+</body>
+</html>
